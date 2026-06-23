@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.python-version
+
+# Test / type / coverage caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# MLflow / experiment artifacts
+mlruns/
+mlartifacts/
+
+# Generated data & reports (kept out of git; reproducible via the CLI)
+data/
+!data/.gitkeep
+artifacts/
+*.parquet
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp

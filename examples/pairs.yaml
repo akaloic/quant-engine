@@ -1,0 +1,30 @@
+# Market-neutral pairs trade on a synthetic cointegrated pair.
+# Run with:  quant-engine backtest --config examples/pairs.yaml
+data:
+  source: synthetic
+  symbols: [XXX, YYY]
+  bars: 756
+  seed: 11
+  params:
+    kind: cointegrated
+
+strategy:
+  name: pairs
+  params:
+    symbol_a: XXX
+    symbol_b: YYY
+    lookback: 60
+    entry_z: 2.0
+    exit_z: 0.5
+    gross: 1.0
+
+backtest:
+  initial_capital: 100000
+  periods_per_year: 252
+  execution:
+    commission_bps: 1.0
+    slippage_bps: 2.0
+  risk:
+    max_gross_exposure: 1.0
+
+output_dir: artifacts

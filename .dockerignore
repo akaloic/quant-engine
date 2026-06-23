@@ -1,0 +1,17 @@
+.git
+.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+htmlcov
+mlruns
+data
+artifacts
+*.parquet
+.DS_Store
+docs
+assets/*.png

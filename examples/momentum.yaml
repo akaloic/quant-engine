@@ -1,0 +1,30 @@
+# Cross-sectional momentum on an 8-name universe over ~5 years.
+# Run with:  quant-engine backtest --config examples/momentum.yaml
+data:
+  source: synthetic
+  symbols: [AAA, BBB, CCC, DDD, EEE, FFF, GGG, HHH]
+  bars: 1260
+  seed: 7
+  params:
+    kind: gbm
+    correlation: 0.3
+
+strategy:
+  name: xs_momentum
+  params:
+    lookback: 126     # ~6 months trailing return
+    holding: 21       # rebalance monthly
+    long_frac: 0.3    # long top 30% / short bottom 30%
+    allow_short: true
+
+backtest:
+  initial_capital: 100000
+  periods_per_year: 252
+  execution:
+    commission_bps: 1.0
+    slippage_bps: 2.0
+  risk:
+    max_gross_exposure: 1.0
+    max_weight_per_symbol: 0.34
+
+output_dir: artifacts
