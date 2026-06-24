@@ -21,10 +21,10 @@ htmlcov/
 mlruns/
 mlartifacts/
 
-# Generated data & reports (kept out of git; reproducible via the CLI)
-data/
-!data/.gitkeep
-artifacts/
+# Generated data & reports (kept out of git; reproducible via the CLI).
+# Anchored to the repo root so they don't match src/quant_engine/data/.
+/data/
+/artifacts/
 *.parquet
 
 # OS / editor
