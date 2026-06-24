@@ -22,7 +22,9 @@ from quant_engine.data.base import HistoricDataHandler
 OHLCV_COLUMNS = ["open", "high", "low", "close", "volume"]
 
 
-def _ohlcv_from_close(close: np.ndarray, index: pd.DatetimeIndex, rng: np.random.Generator) -> pd.DataFrame:
+def _ohlcv_from_close(
+    close: np.ndarray, index: pd.DatetimeIndex, rng: np.random.Generator
+) -> pd.DataFrame:
     """Build a plausible OHLCV frame from a close-price path.
 
     Open is the previous close (gap-free); high/low extend beyond the
