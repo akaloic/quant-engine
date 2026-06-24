@@ -64,3 +64,27 @@ def load_partitioned(root: str | Path, symbols: list[str] | None = None) -> dict
         frame.index.name = "timestamp"
         frames[str(symbol)] = frame
     return frames
+
+
+def load_dataset(root: str | Path, symbols: list[str] | None = None) -> dict[str, pd.DataFrame]:
+    """Read a partitioned dataset, preserving *every* stored column.
+
+    Unlike :func:`load_partitioned`, which projects onto the fixed OHLCV schema,
+    this keeps whatever columns were written (minus the ``symbol``/``year``
+    partition keys) -- used to read the curated feature layer back.
+    """
+    dataset = ds.dataset(str(root), format="parquet", partitioning="hive")
+    scan_filter = ds.field("symbol").isin(symbols) if symbols else None
+    long = dataset.to_table(filter=scan_filter).to_pandas()
+    if long.empty:
+        return {}
+
+    long["timestamp"] = pd.to_datetime(long["timestamp"])
+    frames: dict[str, pd.DataFrame] = {}
+    for symbol, group in long.groupby("symbol", sort=True):
+        frame = (
+            group.drop(columns=["symbol", "year"]).set_index("timestamp").sort_index()
+        )
+        frame.index.name = "timestamp"
+        frames[str(symbol)] = frame
+    return frames

@@ -3,6 +3,60 @@
 This is the "explain it to me like I'm in an interview" guide. Every concept the
 engine implements, why it matters, and the one-line version you'd say out loud.
 
+## Medallion data pipeline (raw → validated → curated)
+
+Before any modelling, market data flows through three layers of increasing quality
+— the standard *medallion* (a.k.a. bronze/silver/gold) lakehouse pattern. **Raw** is
+the source landed as-is (always recoverable); **validated** is what passed the data
+contract; **curated** is the modelling-ready feature layer. A **quarantine** area
+holds the rows that failed. Separating layers means you can re-derive everything
+downstream without re-fetching, and you always know which layer to trust.
+
+> **Say it:** "I land data raw, promote it through a validated layer once it passes a
+> contract, and publish a curated feature layer — bronze/silver/gold, so each stage
+> is reproducible from the one before."
+
+## Data contracts & quarantine
+
+A *data contract* is an explicit, enforced agreement about what valid data looks
+like: no nulls, no non-positive prices, no negative volume, `high/low` must bracket
+`open/close`, no duplicate bars. Rows that violate it are **quarantined with the
+reason** rather than silently dropped (so a human can audit), and the pipeline
+**aborts the run if too large a share fails** — a bad upstream feed can't quietly
+poison every downstream backtest.
+
+> **Say it:** "Validation is a contract, not a filter — bad rows go to quarantine
+> with a reason, and the run fails fast if the reject rate is too high."
+
+## Idempotency & watermarks
+
+Re-running a load must not duplicate data. Writes target a `symbol/year` partition
+and overwrite it (`delete-matching`), so the result is **idempotent** — run it twice,
+get the same lake. Each run records a per-symbol **high-watermark** (the most recent
+bar), which is what a scheduler uses to reason about incremental loads.
+
+> **Say it:** "Partition-level overwrites make ingestion idempotent, and I track a
+> high-watermark per symbol so re-runs and incremental loads are safe."
+
+## Partitioned columnar storage
+
+The lake is Parquet partitioned by `symbol`/`year`. Columnar + partitioned means a
+read for one symbol over a few years only touches the bytes it needs (column pruning
++ partition pruning) instead of scanning a monolithic CSV.
+
+> **Say it:** "Hive-partitioned Parquet, so reads prune to the symbols and years they
+> actually need."
+
+## Orchestration (Airflow) — a thin wrapper
+
+The pipeline logic lives in plain, tested Python functions. Airflow only *schedules*
+them as a DAG (`ingest → validate → curate`) with retries and the contract gate. The
+same functions run under `quant-engine pipeline` locally and in CI, so production and
+test never drift — the same "parity" idea as the engine, applied to data.
+
+> **Say it:** "Airflow orchestrates, it doesn't implement — the DAG calls the same
+> functions my tests do, so what runs nightly is what runs in CI."
+
 ## Event-driven backtesting
 
 A backtest can be written two ways. The *vectorised* way computes signals over a

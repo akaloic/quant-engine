@@ -76,6 +76,21 @@ class DataConfig(BaseModel):
     params: dict[str, Any] = Field(default_factory=dict)
 
 
+class PipelineConfig(BaseModel):
+    """Where the medallion data lake lives and how strict its data contract is."""
+
+    root: str = Field(
+        "data/lake",
+        description="Root of the lake (raw/validated/curated/quarantine layers live under it).",
+    )
+    max_quarantine_rate: float = Field(
+        0.02,
+        ge=0,
+        le=1,
+        description="Fail the run if more than this fraction of rows violate the data contract.",
+    )
+
+
 class StrategyConfig(BaseModel):
     """Strategy selection by registry name plus its keyword arguments."""
 
@@ -89,4 +104,5 @@ class RunConfig(BaseModel):
     data: DataConfig = DataConfig()
     strategy: StrategyConfig = StrategyConfig()
     backtest: BacktestConfig = BacktestConfig()
+    pipeline: PipelineConfig = PipelineConfig()
     output_dir: str = "artifacts"

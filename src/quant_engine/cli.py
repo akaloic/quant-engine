@@ -3,6 +3,7 @@
 Commands
 --------
 * ``gen-data``  generate deterministic synthetic data into a Parquet store
+* ``pipeline``  run the medallion data pipeline (ingest -> validate -> curate)
 * ``backtest``  run a strategy (from flags or a YAML config) and write a tearsheet
 * ``train``     walk-forward train the XGBoost signal (optional ml extra)
 * ``serve``     launch the REST API (optional service extra)
@@ -21,6 +22,7 @@ from quant_engine.config import (
     BacktestConfig,
     DataConfig,
     ExecutionConfig,
+    PipelineConfig,
     RiskConfig,
     RunConfig,
     StrategyConfig,
@@ -122,6 +124,25 @@ def _cmd_gen_data(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_pipeline(args: argparse.Namespace) -> int:
+    from quant_engine.pipeline.flow import run_pipeline
+
+    data = DataConfig(
+        source=args.source,
+        symbols=[s.strip() for s in args.symbols.split(",") if s.strip()],
+        data_dir=args.data_dir,
+        start=args.start,
+        end=args.end,
+        bars=args.bars,
+        seed=args.seed,
+        params={"kind": args.kind, "correlation": args.correlation},
+    )
+    pipeline = PipelineConfig(root=args.root, max_quarantine_rate=args.max_quarantine_rate)
+    result = run_pipeline(data, pipeline)
+    print(result.summary())
+    return 0
+
+
 def _cmd_train(args: argparse.Namespace) -> int:
     import pandas as pd
 
@@ -199,6 +220,22 @@ def build_parser() -> argparse.ArgumentParser:
     gd.add_argument("--correlation", type=float, default=0.0)
     gd.add_argument("--out", default="data")
     gd.set_defaults(func=_cmd_gen_data)
+
+    pl = sub.add_parser(
+        "pipeline", help="run the medallion data pipeline (ingest -> validate -> curate)"
+    )
+    pl.add_argument("--source", default="synthetic", choices=["synthetic", "parquet", "yfinance"])
+    pl.add_argument("--symbols", default="AAA,BBB,CCC,DDD,EEE")
+    pl.add_argument("--kind", default="gbm", choices=["gbm", "cointegrated"])
+    pl.add_argument("--correlation", type=float, default=0.0)
+    pl.add_argument("--bars", type=int, default=756)
+    pl.add_argument("--seed", type=int, default=7)
+    pl.add_argument("--data-dir", default="data", help="source dir when --source parquet")
+    pl.add_argument("--start", default=None)
+    pl.add_argument("--end", default=None)
+    pl.add_argument("--root", default="data/lake", help="root of the medallion data lake")
+    pl.add_argument("--max-quarantine-rate", type=float, default=0.02)
+    pl.set_defaults(func=_cmd_pipeline)
 
     tr = sub.add_parser("train", help="walk-forward train the XGBoost signal")
     tr.add_argument("--symbol", default="AAA")
